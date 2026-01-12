@@ -918,20 +918,30 @@ def get_available_cameras():
         camera_names = []
 
         if platform.system() == "Darwin":  # macOS specific handling
-            # Try to open the default FaceTime camera first
-            cap = cv2.VideoCapture(0)
-            if cap.isOpened():
-                camera_indices.append(0)
-                camera_names.append("FaceTime Camera")
-                cap.release()
-
-            # On macOS, additional cameras typically use indices 1 and 2
-            for i in [1, 2]:
-                cap = cv2.VideoCapture(i)
-                if cap.isOpened():
-                    camera_indices.append(i)
-                    camera_names.append(f"Camera {i}")
-                    cap.release()
+            # On macOS, probing cameras can crash Python due to GIL issues
+            # when camera permission hasn't been granted yet.
+            # Return default camera options without probing.
+            import os
+            if os.environ.get("PROBE_CAMERAS", "0") == "1":
+                # Only probe if explicitly enabled
+                try:
+                    cap = cv2.VideoCapture(0)
+                    if cap.isOpened():
+                        camera_indices.append(0)
+                        camera_names.append("FaceTime Camera")
+                        cap.release()
+                    for i in [1, 2]:
+                        cap = cv2.VideoCapture(i)
+                        if cap.isOpened():
+                            camera_indices.append(i)
+                            camera_names.append(f"Camera {i}")
+                            cap.release()
+                except Exception as e:
+                    print(f"Camera probe failed: {e}")
+            else:
+                # Default: assume standard Mac cameras exist
+                camera_indices = [0, 1, 2]
+                camera_names = ["FaceTime Camera", "Camera 1", "Camera 2"]
         else:
             # Linux camera detection - test first 10 indices
             for i in range(10):
