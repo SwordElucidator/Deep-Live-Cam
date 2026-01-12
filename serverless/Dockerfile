@@ -55,24 +55,34 @@ FROM base AS dependencies
 
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+# Install PyTorch with CUDA support first
+RUN pip install --no-cache-dir \
+    torch==2.1.0 \
+    torchvision==0.16.0 \
+    --index-url https://download.pytorch.org/whl/cu121
 
-# Install Python dependencies (with CUDA support)
-RUN pip install --no-cache-dir torch==2.1.0+cu121 torchvision==0.16.0+cu121 \
-    --extra-index-url https://download.pytorch.org/whl/cu121
+# Install numpy first (required by many packages)
+RUN pip install --no-cache-dir "numpy>=1.23.5,<2"
 
-# Install remaining dependencies
+# Install ONNX runtime with CUDA
+RUN pip install --no-cache-dir \
+    onnxruntime-gpu==1.16.3 \
+    onnx==1.15.0
+
+# Install OpenCV (headless for server)
+RUN pip install --no-cache-dir opencv-python-headless==4.8.1.78
+
+# Install InsightFace and dependencies
+RUN pip install --no-cache-dir \
+    insightface==0.7.3 \
+    albumentations
+
+# Install core dependencies
 RUN pip install --no-cache-dir \
     runpod==1.6.0 \
     boto3==1.34.0 \
     pydantic==2.5.0 \
     pydantic-settings==2.1.0 \
-    onnxruntime-gpu==1.16.3 \
-    onnx==1.15.0 \
-    insightface==0.7.3 \
-    opencv-python==4.8.1.78 \
-    numpy>=1.23.5,<2 \
     pillow==10.1.0 \
     tqdm==4.66.1 \
     requests==2.31.0
