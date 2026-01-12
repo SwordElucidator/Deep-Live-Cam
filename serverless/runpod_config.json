@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.runpod.io/reference/endpoint-configurations",
+  "name": "deep-live-cam-video-swap",
+  "description": "Video face swap API using Deep-Live-Cam",
+  "version": "1.0.0",
+  
+  "docker": {
+    "image": "your-registry/deep-live-cam-api:latest",
+    "registry": {
+      "type": "dockerhub"
+    }
+  },
+  
+  "gpu": {
+    "type": "NVIDIA A10G",
+    "count": 1,
+    "min_vram_gb": 16
+  },
+  
+  "resources": {
+    "volume_size_gb": 50,
+    "container_disk_gb": 30
+  },
+  
+  "scaling": {
+    "min_workers": 0,
+    "max_workers": 5,
+    "idle_timeout_seconds": 60,
+    "scale_down_delay_seconds": 30
+  },
+  
+  "execution": {
+    "timeout_seconds": 600,
+    "max_retries": 2
+  },
+  
+  "flashboot": {
+    "enabled": true,
+    "warm_workers": 1
+  },
+  
+  "environment": {
+    "AWS_DEFAULT_REGION": "us-east-1",
+    "EXECUTION_PROVIDER": "cuda",
+    "EXECUTION_THREADS": "8",
+    "MAX_VIDEO_DURATION": "600",
+    "MAX_VIDEO_SIZE_MB": "2048",
+    "LOG_LEVEL": "INFO"
+  },
+  
+  "secrets": [
+    {
+      "name": "AWS_ACCESS_KEY_ID",
+      "description": "AWS Access Key for S3 access"
+    },
+    {
+      "name": "AWS_SECRET_ACCESS_KEY",
+      "description": "AWS Secret Key for S3 access"
+    }
+  ],
+  
+  "healthcheck": {
+    "enabled": true,
+    "path": "/health",
+    "interval_seconds": 30,
+    "timeout_seconds": 10
+  },
+  
+  "logging": {
+    "enabled": true,
+    "retention_days": 7
+  },
+  
+  "tags": [
+    "face-swap",
+    "video-processing",
+    "gpu",
+    "ai"
+  ]
+}
