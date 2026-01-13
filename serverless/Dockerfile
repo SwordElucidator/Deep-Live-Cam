@@ -12,9 +12,9 @@
 #     deep-live-cam-api:latest
 
 # ============================================
-# Stage 1: Base Image with CUDA
+# Stage 1: Base Image with CUDA 11.8 (required for onnxruntime-gpu)
 # ============================================
-FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04 AS base
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04 AS base
 
 # Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -55,11 +55,11 @@ FROM base AS dependencies
 
 WORKDIR /app
 
-# Install PyTorch with CUDA support first
+# Install PyTorch with CUDA 11.8 support
 RUN pip install --no-cache-dir \
     torch==2.1.0 \
     torchvision==0.16.0 \
-    --index-url https://download.pytorch.org/whl/cu121
+    --index-url https://download.pytorch.org/whl/cu118
 
 # Install numpy first (required by many packages)
 RUN pip install --no-cache-dir "numpy>=1.23.5,<2"
@@ -92,6 +92,12 @@ RUN pip install --no-cache-dir \
     basicsr==1.4.2 \
     facexlib==0.3.0 \
     gfpgan==1.3.8
+
+# Ensure numpy stays at version 1.x (some packages might upgrade it)
+RUN pip install --no-cache-dir "numpy>=1.23.5,<2" --force-reinstall
+
+# Verify critical dependencies
+RUN python -c "import numpy; print(f'NumPy version: {numpy.__version__}'); assert int(numpy.__version__.split('.')[0]) < 2, 'NumPy 2.x not supported'"
 
 # ============================================
 # Stage 3: Download Models
