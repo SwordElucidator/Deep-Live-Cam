@@ -136,7 +136,12 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
         try:
             # Ensure initialized
             if not _initialized:
-                initialize()
+                logger.info("Service not initialized, attempting initialization...")
+                try:
+                    initialize()
+                except Exception as init_error:
+                    logger.error(f"Initialization failed in handler: {init_error}")
+                    raise ProcessingError("INIT_FAILED", f"Service initialization failed: {str(init_error)}")
             
             # Step 1: Validate request
             logger.info("Step 1/6: Validating request...")
@@ -287,25 +292,30 @@ def _build_error_response(
     Returns:
         Error response dictionary
     """
-    error_response = SwapVideoResponse(
-        job_id=job_id,
-        status=JobStatus.FAILED,
-        error={
+    # Build response dict directly to ensure all fields are included
+    response = {
+        "job_id": job_id,
+        "status": "failed",
+        "result": None,
+        "error": {
             "code": error_code,
             "message": error_message,
             "details": details or {}
-        }
-    )
+        },
+        "message": f"Error: {error_code} - {error_message}"
+    }
+    
+    logger.error(f"Building error response: {error_code} - {error_message}")
     
     # Send failure callback if configured
     callback_url = job_input.get("callback_url")
     if callback_url:
         try:
-            CallbackService.send(callback_url, error_response.model_dump())
+            CallbackService.send(callback_url, response)
         except Exception as callback_error:
             logger.error(f"Failed to send error callback: {callback_error}")
     
-    return error_response.model_dump()
+    return response
 
 
 def health_check() -> Dict[str, Any]:
